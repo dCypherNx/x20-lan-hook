@@ -1,0 +1,14 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "X20 LAN Hook",
+        "description": "Observe as notificações LAN da integração Xiaomi Home. Informe o DID do X20 Max para filtrar somente esse robô; deixe vazio durante a descoberta inicial.",
+        "data": {
+          "device_did": "DID do X20 Max",
+          "debug_capture": "Registrar payloads MIoT no log de depuração"
+        }
+      }
+    }
+  }
+}
