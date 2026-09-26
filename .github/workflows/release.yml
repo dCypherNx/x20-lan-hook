@@ -1,0 +1,98 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "RC version (example: 0.1.0-rc.1)"
+        required: true
+        type: string
+  push:
+    branches:
+      - main
+    paths:
+      - "custom_components/x20_lan_hook/manifest.json"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release
+        id: release
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          MANIFEST="custom_components/x20_lan_hook/manifest.json"
+          MANIFEST_VERSION="$(python -c 'import json; print(json.load(open("'"$MANIFEST"'"))["version"])')"
+
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            VERSION="$INPUT_VERSION"
+            if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+$ ]]; then
+              echo "RC version must match X.Y.Z-rc.N" >&2
+              exit 1
+            fi
+            PRERELEASE=true
+            python -c 'import json,sys; p,v=sys.argv[1:]; d=json.load(open(p)); d["version"]=v; open(p,"w").write(json.dumps(d,indent=2,ensure_ascii=False)+"\\n")' "$MANIFEST" "$VERSION"
+          else
+            VERSION="$MANIFEST_VERSION"
+            if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "Stable manifest version must match X.Y.Z" >&2
+              exit 1
+            fi
+            PRERELEASE=false
+          fi
+
+          TAG="v$VERSION"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists." >&2
+            exit 1
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
+
+      - name: Validate integration files
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m json.tool custom_components/x20_lan_hook/manifest.json >/dev/null
+          python -m compileall -q custom_components/x20_lan_hook
+
+      - name: Build HACS package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd custom_components/x20_lan_hook
+          zip -r ../../x20_lan_hook.zip . -x "__pycache__/*" -x "*.pyc"
+
+      - name: Publish RC
+        if: steps.release.outputs.prerelease == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          gh release create "$TAG" x20_lan_hook.zip --target "$GITHUB_SHA" --title "$TAG" --generate-notes --prerelease
+
+      - name: Publish stable release
+        if: steps.release.outputs.prerelease == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          gh release create "$TAG" x20_lan_hook.zip --target "$GITHUB_SHA" --title "$TAG" --generate-notes --latest
