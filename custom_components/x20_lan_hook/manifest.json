@@ -1,0 +1,9 @@
+{
+  "domain": "x20_lan_hook",
+  "name": "X20 MIoT LAN Hook",
+  "version": "0.0.1",
+  "requirements": [],
+  "dependencies": ["xiaomi_home"],
+  "codeowners": [],
+  "config_flow": false
+}
