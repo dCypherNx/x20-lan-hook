@@ -2,8 +2,11 @@
   "domain": "x20_lan_hook",
   "name": "X20 MIoT LAN Hook",
   "version": "0.0.1",
+  "documentation": "https://github.com/dCypherNx/x20-lan-hook",
+  "issue_tracker": "https://github.com/dCypherNx/x20-lan-hook/issues",
   "requirements": [],
   "dependencies": ["xiaomi_home"],
-  "codeowners": [],
-  "config_flow": false
+  "codeowners": ["@dCypherNx"],
+  "config_flow": false,
+  "iot_class": "local_push"
 }
