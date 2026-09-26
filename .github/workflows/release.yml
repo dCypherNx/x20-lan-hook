@@ -23,7 +23,6 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,7 +37,6 @@ jobs:
           INPUT_VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
-
           MANIFEST="custom_components/x20_lan_hook/manifest.json"
           MANIFEST_VERSION="$(python -c 'import json; print(json.load(open("'"$MANIFEST"'"))["version"])')"
 
@@ -49,19 +47,7 @@ jobs:
               exit 1
             fi
             PRERELEASE=true
-
-            python - "$MANIFEST" "$VERSION" <<'PY'
-          import json
-          import sys
-
-          path, version = sys.argv[1:]
-          with open(path, encoding="utf-8") as file:
-              manifest = json.load(file)
-          manifest["version"] = version
-          with open(path, "w", encoding="utf-8") as file:
-              json.dump(manifest, file, indent=2, ensure_ascii=False)
-              file.write("\n")
-          PY
+            python -c 'import json,sys; p,v=sys.argv[1:]; d=json.load(open(p)); d["version"]=v; open(p,"w").write(json.dumps(d,indent=2,ensure_ascii=False)+"\\n")' "$MANIFEST" "$VERSION"
           else
             VERSION="$MANIFEST_VERSION"
             if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -72,7 +58,6 @@ jobs:
           fi
 
           TAG="v$VERSION"
-
           if git rev-parse "$TAG" >/dev/null 2>&1; then
             echo "Tag $TAG already exists." >&2
             exit 1
@@ -94,22 +79,15 @@ jobs:
         run: |
           set -euo pipefail
           cd custom_components/x20_lan_hook
-          zip -r ../../x20_lan_hook.zip . \
-            -x "__pycache__/*" \
-            -x "*.pyc"
+          zip -r ../../x20_lan_hook.zip . -x "__pycache__/*" -x "*.pyc"
 
       - name: Publish RC
         if: steps.release.outputs.prerelease == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.release.outputs.tag }}
-          VERSION: ${{ steps.release.outputs.version }}
         run: |
-          gh release create "$TAG" x20_lan_hook.zip \
-            --target "$GITHUB_SHA" \
-            --title "$TAG" \
-            --generate-notes \
-            --prerelease
+          gh release create "$TAG" x20_lan_hook.zip --target "$GITHUB_SHA" --title "$TAG" --generate-notes --prerelease
 
       - name: Publish stable release
         if: steps.release.outputs.prerelease == 'false'
@@ -117,8 +95,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.release.outputs.tag }}
         run: |
-          gh release create "$TAG" x20_lan_hook.zip \
-            --target "$GITHUB_SHA" \
-            --title "$TAG" \
-            --generate-notes \
-            --latest
+          gh release create "$TAG" x20_lan_hook.zip --target "$GITHUB_SHA" --title "$TAG" --generate-notes --latest
