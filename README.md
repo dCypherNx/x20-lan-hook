@@ -112,6 +112,15 @@ documentados em [docs/x20-max-status-codes.md](docs/x20-max-status-codes.md).
 Veja a [auditoria sanitizada do uso real](docs/live-ha-findings.md) para o
 contexto que orientou esta documentação e os pontos de evolução identificados.
 
+## Operação e desenvolvimento
+
+- [Operação sem internet](docs/offline-operation.md): o que continua local, o
+  que depende da Xiaomi Cloud e quais cenários ainda precisam de prova física.
+- [Branches em andamento](docs/development-branches.md): escopo e próximos
+  passos das linhas de desenvolvimento abertas.
+- [Como contribuir](CONTRIBUTING.md): convenção de branches, critérios para PR
+  e cuidados com dados reais do Home Assistant.
+
 ## Licença
 
 MIT.
